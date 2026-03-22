@@ -10,7 +10,6 @@
 
 ### Soal 1
 
-
 #### Penjelasan
 
 **passenger.csv**
