@@ -10,19 +10,17 @@
 
 ### Soal 1
 
+**Dikerjakan secara: individu**
+
 #### Penjelasan
 
 **passenger.csv**
 
 untuk langkah pertama, download terlebih dahulu [passenger.csv](https://docs.google.com/spreadsheets/d/1NHmyS6wRO7To7ta-NLOOLHkPS6valvNaX7tawsv1zfE/export?format=csv&gid=0) dengan menggunakan command `wget -O passenger.csv "link passenger.csv"
 
-hasilnya:
-
-![download](/Semester_2/sisop-2026/modul-1/assets/soal_1/download.png)
-
 Selanjutnya membuat program bernama KANJ.sh
 
-** shell scripting - KANJ.sh **
+**1. Shell scripting - KANJ.sh - BEGINNING**
 
 ```sh
 BEGIN {
@@ -33,6 +31,8 @@ BEGIN {
 ```
 
 Disini adalah awal mulanya. Untuk memulai command biasanya menggunakan `awk -f file_program arg1 arg2` dengan file_program berupa .awk atau .sh (dengan catatan .sh tidak berupa `#!/bin/bash`), arg1 bisa berupa inputan file apapun seperti txt, csv dan arg2 adalah inputan apapun.
+
+**2. Shell scripting - KANJ.sh - MIDDLE**
 
 ```sh
 {
@@ -120,6 +120,8 @@ bagian ini adalah regex yang melakukan pengecekan terhadap file dan biasanya fil
 
 adalah sebuah program if else inputan user. Inputan `a` adalah inputan yang menjumlahkan seluruh penumpang yang ada di csv ini. Inputan `b` adalah inputan yang menjumlahkan gerbong yang ada di csv. Inputan `c` adalah inputan pengecekan dalam csv yang tertua. Inputan `d` adalah inputan untuk mengetahui jumlah seluruh umur penumpang dalam csv. Dan yang terakhir inputan `e` adalah inputan program yang ingin memeriksa total penumpang Business class ini
 
+**3. Shell scripting - KANJ.sh - END**
+
 ```sh
 END {
 	switch (pilihan) {
@@ -162,27 +164,31 @@ Ini adalah program terakhir dari shell script ini. Bisa dibilang outputan progra
 
 #### Output
 
-1. Output dari pilihan a
+1. Mengunduh file passenger.csv
+
+![download](assets/soal_1/download.png)
+
+2. Output dari pilihan a
 
 ![alt text](assets/soal_1/opsi%20a.png)
 
-2. Output dari pilihan b
+3. Output dari pilihan b
 
 ![alt text](assets/soal_1/opsi%20b.png)
 
-3. Output dari pilihan c
+4. Output dari pilihan c
 
 ![alt text](assets/soal_1/opsi%20c.png)
 
-4. Output dari pilihan d
+5. Output dari pilihan d
 
 ![alt text](assets/soal_1/opsi%20d.png)
 
-5. Output dari pilihan e
+6. Output dari pilihan e
 
 ![alt text](assets/soal_1/opsi%20e.png)
 
-6. Output dari selain pilihan a, b, c, d, e
+7. Output dari selain pilihan a, b, c, d, e
 
 ![alt text](assets/soal_1/opsi%20lain.png)
 
@@ -192,135 +198,86 @@ Tidak ada kendala
 
 ### Soal 2
 
-**Dikerjakan oleh: Aslam Ahmad Usman (5027241074)**
+**Dikerjakan secara: individu**
 
 #### Penjelasan
 
+**a. Mengunduh file peta-ekspedisi-mamba.pdf**
 
-**a. Mengunduh File Order dan Menyimpannya ke Shared Memory**
+Langkah pertama yaitu menyiapkan tools `gdown` untuk mendownload sebuah pdf. Lalu menggunakan command `gdown https://drive.google.com/uc?id=1q10pHSC3KFfvEiCN3V6PTroPR7YGHF6Q`
 
-Langkah pertama adalah mengunduh file `delivery_order.csv` yang lalu akan dieksekusi oleh `execvp("sh", args);`. File tersebut lalu akan dibaca dan disimpan ke shared memory di main().
+**b. Membuat sebuah folder ekspedisi dan memindahkan ke dalam folder ekspedisi**
 
-```c
-int read_csv(char *filename, Order *orders) {
-  if (access("Soal_2/delivery_order.csv", F_OK) != 0) {
-    pid_t pid = fork();
-    if (pid == 0) {
-      char *args[] = {"sh", "-c", "wget --quiet --no-cache --no-cookies --no-check-certificate \"https://docs.google.com/uc?export=download&confirm=$(wget --quiet --no-cache --no-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=BU299JKGENW28R' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\\1/p')&id=1OJfRuLgsBnIBWtdRXbRsD2sG6NhMKOg9\" -O Soal_2/delivery_order.csv", NULL};
-      execvp("sh", args);
-      exit(EXIT_FAILURE);
-    } else {
-      wait(NULL);
-   }
- }
+Langka kedua menggunakan command `mv peta-ekspedisi-mamba.pdf ekspedisi` untuk memindahkannya ke dalam folder ekspedisi
 
-  FILE *fp = fopen("Soal_2/delivery_order.csv", "r");
-  if (!fp) {
-    perror("fopen");
-    return 0;
-  }
+**c. Menggunakan strings untuk mengetahui metadata pdf file**
+
+Langkah ketiga menggunakan command `strings peta-ekspedisi-mamba.pdf` untuk mengetahui rahasia dalam file pdf ini yang berupa sebuah link github.
+
+**d. Menggunakan git clone**
+
+Langkah keempat menggunakan command `git clone https://github.com/pocongcyber77/peta-gunung-kawi.git` untuk clone berupa `gsxtrack.json`
+
+**e. mengurutkan id, site_name, latitude, dan longitude**
+
+Langkah kelima membuat sebuah program bernama `parserkoordinat.sh` yang berisi programnya:
+
+```sh
+#!/bin/bash
+
+echo "haik, wakarimasta. Lagi process membaca gsxtrack.json dan dipindah ke titik-penting.txt"
+
+jq -r '.features[] | "\(.id), \(.properties.site_name), \(.properties.latitude), \(.properties.longitude)"' gsxtrack.json > titik-penting.txt
+
+echo "Kelar wak. udh selesai dipindah ke titik-penting.txt"
 ```
 
-**b. Pengiriman Bertipe Express**
+Inti dari program ini adalah mengambil id, site_name, latitude, dan longitude yang ada dalam `features` dan dipindahkan ke `titik-penting.txt` untuk diurutkan.
 
-Langkah pertama adalah mendeklarasikan agen-agen sebagai thread yang terpisah yang akan menjalankan fungsi express_order.
+**f. Membuat titik pusat metode titik simetri diagonal**
 
-```c
- pthread_t express_agents[3];
-    char *agent_names[] = {"AGENT A", "AGENT B", "AGENT C"};
+Langkah keenam membuat program `nemupusaka.sh` yang programnya:
 
-    for (int i = 0; i < 3; i++) {
-      pthread_create(&express_agents[i], NULL, express_order, agent_names[i]);
-    }
-```
-`pthread_mutex_init(&lock, NULL);` digunakan untuk menginisialisasikan mutex Agar thread yang dijalankan tidak bertabrakan satu sama lain, lalu saat thread mulai mencari order express, pthread_mutex_lock(&lock); digunakan untuk mengunci akses, lalu pthread_mutex_unlock(&lock); digunakan untuk membukanya kembali setelah selesai sehingga thread lain bisa melanjutkan tugasnya.
+```sh
+#!/bin/bash
 
-```c
- pthread_mutex_init(&lock, NULL); 
-```
+file="titik-penting.txt"
 
-Pencarian penerima dengan tipe express sendiri dilakukan dengan melihat apakah jenis orderannya express dan status orderan masih false. Kalau memenuhi, maka status diubah jadi true, lalu nama agen disimpan dalam delivered_by oleh `strcpy` dan dicatat dalam delivery_log
-
-```c
-  while (1) {
-  pthread_mutex_lock(&lock);
-  bool found = false;
-
-  for (int i = 0; i < MAX_ORDERS; i++) {
-   if (strcmp(orders[i].jenis, "Express") == 0 && orders[i].status == false) {
-      orders[i].status = true;
-      strcpy(orders[i].delivered_by, agent_name);
-      write_log(agent_name, orders[i].nama, orders[i].alamat);
-      found = true;
-      break;
-     }
-    }
-    pthread_mutex_unlock(&lock); 
-    if (!found) break;
-    sleep(1);
-  }
+awk -F', ' '
+BEGIN {
+}
+NR==1 {
+    lat_min=lat_max=$3
+    lon_min=lon_max=$4
+}
+{
+    if ($3 < lat_min) lat_min = $3
+    if ($3 > lat_max) lat_max = $3
+    if ($4 < lon_min) lon_min = $4
+    if ($4 > lon_max) lon_max = $4
+}
+END {
+    pusat_lat = (lat_min + lat_max) / 2
+    pusat_lon = (lon_min + lon_max) / 2
+    
+    printf "Koordinat: "
+    printf "%.6f, %.6f\n", pusat_lat, pusat_lon
+    printf "Koordinat: %.6f, %.6f\n", pusat_lat, pusat_lon > "posisipusaka.txt"
+}' "$file"
 ```
 
+Yang isi dari program ini adalah membandingkan maximum dan minimum longitude dan latitude dari masing-masing yang ada di file `titik-penting.txt`
 
-**c. Pengiriman Bertipe Reguler**
-Pengiriman reguler dapat dilakukan dengan pemanggilan dengan format `./dispatcher -deliver [nama penerima]`, lalu akan dilakukan looping untuk mencari nama penerima yang kita panggil melalui strcmp. Jika penerima ditemukan maka status order-an akan diubah menjadi order (atau sudah delivered) dan menyimpan pengiriman ke dalam log.
-
-```c
-else if (strcmp(argv[1], "-deliver") == 0) {
-    char *target_name = argv[2];
-    char *delivered_by = getenv("USER");
-
-  for (int i = 0; i < total_order; i++) {
-     if (strcmp(orders[i].nama, target_name) == 0 && strcmp(orders[i].jenis, "Reguler") == 0) {
-        orders[i].status = true;
-        if (delivered_by != NULL) {
-        strcpy(orders[i].delivered_by, delivered_by);
-        }
-        printf("Delivering %s by %s\n", orders[i].nama, orders[i].delivered_by);
-        write_log(orders[i].delivered_by, orders[i].nama, orders[i].alamat);
-        break;
-     }  
-     else if (strcmp(orders[i].nama, target_name) == 0 && strcmp(orders[i].jenis, "Express") == 0) {
-        printf("Command can't deliver an Express orders.\n");
-        break;
-   }
- }
+```sh
+{
+    if ($3 < lat_min) lat_min = $3
+    if ($3 > lat_max) lat_max = $3
+    if ($4 < lon_min) lon_min = $4
+    if ($4 > lon_max) lon_max = $4
+}
 ```
 
-**Mengecek Status Pesanan**
-
-Pengecekan status dilakukan dengan memanggil `./dispatcher -status [nama penerima]`. Lalu dilakukan pencocokan dengan `strcmp`, jika `found = true;` maka akan dicek statusnya antara delivered atau pending. Jika `!found` maka nama penerima/target tidak ditemukan.
-
-```c
-if (argc == 3 && strcmp(argv[1], "-status") == 0) {
-    char *target = argv[2];
-    for (int i = 0; i < MAX_ORDERS; i++) {
-      if (strcmp(orders[i].nama, target) == 0) {
-          found = true;
-          if (orders[i].status == true) {
-              printf("Status for %s: Delivered by %s\n", orders[i].nama, orders[i].delivered_by);
-          } else {
-              printf("Status for %s: Pending\n", orders[i].nama);
-          }
-          break;
-      }    
-  } if (!found) {
-    printf("Order in the name of %s not found.\n", target);
-  } 
-```
-
-**e. Melihat Daftar Semua Pesanan**
-
-Untuk mengecek list pengiriman dilakukan dengan memanggil `./dispatcher -list`.  `for (int i = 0; i < MAX_ORDERS; i++)` akan dijalankan untuk menampilkan seluruh list order yang ada. Lalu Baris `if (strlen(orders[i].nama) == 0) continue;` digunakan untuk menghindari entri kosong di array.
-
-```c
-else if (argc == 2 && strcmp(argv[1], "-list") == 0) {
-    printf("Order List:\n");
-    for (int i = 0; i < MAX_ORDERS; i++) {
-        if (strlen(orders[i].nama) == 0) continue; 
-        printf("- %s: %s (%s)\n", orders[i].nama, orders[i].status == 1 ? "Delivered" : "Pending", orders[i].jenis);
-    }    
-```
+adalah program mencari latitude maximum, latitude minimum, longitude minimum, dan longitude maximum. 
 
 #### Output
 
