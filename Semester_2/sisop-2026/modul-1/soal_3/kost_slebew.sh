@@ -178,7 +178,7 @@ laporan() {
 
     echo "$rekap"
     
-    echo "$rekap" >> rekap/laporan_bulanan.txt
+    echo "$rekap" > rekap/laporan_bulanan.txt
     echo "Hasil rekapan sudah dimasukkan ke dalam rekap/laporan_bulanan.txt"
     
     read -p "Enter untuk kembali..." dummy
@@ -208,7 +208,7 @@ pengingat() {
             (crontab -l 2>/dev/null; echo "$jadwal $cmd") | crontab -
             
             echo "Jadwal berhasil diaktifkan!"
-            echo "[$(date)] Berhasil input: $jadwal $cmd" >> log/tagihan.log
+            echo "[$(date)] Berhasil input: $jadwal $cmd" > log/tagihan.log
 
         elif [ "$pilih" == "3" ]; then
 
