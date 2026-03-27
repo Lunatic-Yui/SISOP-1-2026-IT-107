@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# some update on this kost_slebew.sh:
+# some update on this kost_slebew.sh: (there are many # on this section, so yeah. that is updating some content and point it if it is new update tho)
 re='^[0-9]+$'
 
 cd "$(dirname "$0")" 
@@ -9,18 +9,17 @@ if [ ! -f data/penghuni.csv ]; then
     echo "Nama,Kamar,Harga,Tanggal,Status" > data/penghuni.csv
 fi
 
-# adding function tagihan for './kost_slebew.sh --check-tagihan'
+# adding function tagihan for './kost_slebew.sh --check-tagihan' and using tee to look and override
 tagihan() {
 
     if [ -f "data/penghuni.csv" ]; then
         waktu=$(date +"%Y-%m-%d %H:%M:%S")
-        echo "[$waktu] Mengecek tagihan..." >> log/tagihan.log
+        echo "[$waktu] Mengecek tagihan..." | tee -a log/tagihan.log
         
-
         awk -F',' '
         NR > 1 && $5 == "menunggak" { 
             print " -> Si " $1 " di kamar " $2 " belum bayar Rp" $3 
-        }' data/penghuni.csv >> log/tagihan.log
+        }' data/penghuni.csv | tee -a log/tagihan.log
     fi
 }
 
@@ -29,7 +28,6 @@ if [ "$1" == "--check-tagihan" ] ; then
     tagihan
     exit 0;
 fi  
-
 
 create() {
 
@@ -242,6 +240,7 @@ laporan() {
     done
 }
 
+#adjust some cron in here
 pengingat() {
     while true; do
         echo "==================================================== "
@@ -266,6 +265,7 @@ pengingat() {
                 read -p "Perintah/Script yg dijalankan (path lengkap): " cmd
                 read -p "Perintahnya yang diinginkan: " command
                 
+                #adding command "--check-tagihan" to crontab
                 if (crontab -l 2>/dev/null; echo "$jadwal $cmd $command") | crontab - 2>/dev/null; then
                     echo "Jadwal berhasil diaktifkan!"
                     echo "[$(date)] Berhasil input: $jadwal $cmd $command" >> log/tagihan.log
