@@ -57,10 +57,11 @@ END {
 		print oldest " adalah penumpang kereta tertua dengan usia " age " tahun"
 		break
 
+		# fixing option d: adding "\n" on the last sentence
 		case "d":
 		if (data > 0) {
 			average_age = total / data
-			printf "Rata-rata usia penumpang adalah %.0f tahun", average_age
+			printf "Rata-rata usia penumpang adalah %.0f tahun\n", average_age
 		}
 		break
 
