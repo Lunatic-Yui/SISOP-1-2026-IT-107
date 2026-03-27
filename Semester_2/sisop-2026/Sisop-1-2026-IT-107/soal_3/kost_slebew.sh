@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# some update on this kost_slebew.sh: (there are many # on this section, so yeah. that is updating some content and point it if it is new update tho)
 re='^[0-9]+$'
 
 cd "$(dirname "$0")" 
@@ -7,6 +8,26 @@ mkdir -p data log rekap sampah
 if [ ! -f data/penghuni.csv ]; then
     echo "Nama,Kamar,Harga,Tanggal,Status" > data/penghuni.csv
 fi
+
+# adding function tagihan for './kost_slebew.sh --check-tagihan' and using tee to look and override
+tagihan() {
+
+    if [ -f "data/penghuni.csv" ]; then
+        waktu=$(date +"%Y-%m-%d %H:%M:%S")
+        echo "[$waktu] Mengecek tagihan..." | tee -a log/tagihan.log
+        
+        awk -F',' '
+        NR > 1 && $5 == "menunggak" { 
+            print " -> Si " $1 " di kamar " $2 " belum bayar Rp" $3 
+        }' data/penghuni.csv | tee -a log/tagihan.log
+    fi
+}
+
+# Here are the command if './kost_slebew.sh --check-tagihan'
+if [ "$1" == "--check-tagihan" ] ; then
+    tagihan
+    exit 0;
+fi  
 
 create() {
 
@@ -31,11 +52,26 @@ create() {
         fi
     else
         echo "maaf harus input angka"
-        sleep 1
         continue
     fi
+
     read -p "Harga sewa: " price
+    if [[ "$price" -le 0 ]]; then
+        echo "angka tidak boleh minus maupun 0"
+        continue
+    fi
+
+    # adding some sanitize on date section
     read -p "Tanggal masuk (YYYY-MM-DD): " date
+    if [[ ! "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+        echo "Salah format brok. harusnya 2026-12-31!"
+        continue
+    fi
+
+    if ! date -d "$date" >/dev/null 2>&1; then
+            echo "Tanggal tidak masuk akal,coba bikin yg bener!"
+            continue
+        fi
     read -p "status awal (aktif atau menunggak): " status
     if [[ "$status" == "aktif" || "$status" == "menunggak" ]]; then
           echo "$nama,$kamar,$price,$date,$status" >> data/penghuni.csv
@@ -58,30 +94,33 @@ create() {
 done
 }
 
+# update delete section, remove 'cp' change to
 delete() {
 
     echo "==================================================== "
     echo "           『Delete Huni Kost Slebew 』              "
     echo "==================================================== "
 
-    cp data/penghuni.csv sampah/history_hapus.csv
     read -p "Masukkan nama penghuni yang ingin dihapus: " nama
 
-    if grep -q -w "$nama" sampah/history_hapus.csv 2>/dev/null; then
-        sed -i "/^$nama,/d" sampah/history_hapus.csv
+    # this one
+    if grep -q "^$nama," data/penghuni.csv 2>/dev/null; then
+        data_orang=$(grep "^$nama," data/penghuni.csv)
+        tgl_hapus=$(date +"%Y-%m-%d")
+        echo "$data_orang,$tgl_hapus" >> sampah/history_hapus.csv
+        sed -i "/^$nama,/d" data/penghuni.csv
         echo "Penghuni '$nama' berhasil dihapus."
     else
         echo "Penghuni '$nama' tidak ditemukan."
     fi
 
-     while true; do
+    while true; do
           read -p "Enter untuk kembali..." dummy
-          if [ "$dummy" != "" ]; then
+            if [ "$dummy" != "" ]; then
                echo "Nope, harus enter"
-
-               else
+                else
                     break   
-          fi
+            fi
     done
 
     return
@@ -137,6 +176,16 @@ update_huni() {
         else
             echo "Penghuni '$nama' tidak ditemukan."
         fi
+
+        while true; do
+            read -p "Tekan enter untuk kembali... " dummy
+
+            if [ "$dummy" != "" ]; then
+                echo "Harus enter"
+            else
+                break
+            fi
+        done
 }
 
 laporan() {
@@ -182,8 +231,16 @@ laporan() {
     echo "Hasil rekapan sudah dimasukkan ke dalam rekap/laporan_bulanan.txt"
     
     read -p "Enter untuk kembali..." dummy
+    while true; do
+        if [ "$dummy" != "" ]; then
+            echo "Nope, harus enter"
+        else
+            break   
+        fi
+    done
 }
 
+#adjust some cron in here
 pengingat() {
     while true; do
         echo "==================================================== "
@@ -201,14 +258,22 @@ pengingat() {
             crontab -l 2>/dev/null || echo "Belum ada jadwal aktif."
             
         elif [ "$pilih" == "2" ]; then
-            echo "Format: menit jam tgl bulan hari_minggu"
-            read -p "Input jadwal (contoh: 00 23 * * *): " jadwal
-            read -p "Perintah/Script yg dijalankan (path lengkap): " cmd
-            
-            (crontab -l 2>/dev/null; echo "$jadwal $cmd") | crontab -
-            
-            echo "Jadwal berhasil diaktifkan!"
-            echo "[$(date)] Berhasil input: $jadwal $cmd" > log/tagihan.log
+            # adding some loop in here
+            while true; do
+                echo "Format: menit jam tgl bulan hari_minggu"
+                read -p "Input jadwal (contoh: 00 23 * * *): " jadwal
+                read -p "Perintah/Script yg dijalankan (path lengkap): " cmd
+                read -p "Perintahnya yang diinginkan: " command
+                
+                #adding command "--check-tagihan" to crontab
+                if (crontab -l 2>/dev/null; echo "$jadwal $cmd $command") | crontab - 2>/dev/null; then
+                    echo "Jadwal berhasil diaktifkan!"
+                    echo "[$(date)] Berhasil input: $jadwal $cmd $command" >> log/tagihan.log
+                    break
+                else
+                    echo "Gagal mengaktifkan jadwal! Pastikan format waktunya benar."
+                fi
+            done
 
         elif [ "$pilih" == "3" ]; then
 
@@ -222,12 +287,14 @@ pengingat() {
             echo "pilihan salah. coba lagi"
         fi
 
-        read -p "Enter untuk kembali..." dummy
+        while true; do
+            read -p "Enter untuk kembali..." dummy
                 if [ "$dummy" != "" ]; then
                     echo "Nope, harus enter"
                 else
                     break   
                 fi
+        done
     done
 }
 
@@ -257,7 +324,7 @@ echo " 5 | Cetak laporan keuangan "
 echo " 6 | Kelola Cron (pengingat tagihan) "
 echo " 7 | Exit "
 echo "============================================="
-read -p "Silahkan pilih [1 - 7]:" opt
+read -p "Silahkan pilih [1 - 7]: " opt
 
     if [[ $opt =~ $re ]] ; then
         if [ "$opt" == "7" ]; then

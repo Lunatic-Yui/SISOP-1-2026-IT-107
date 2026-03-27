@@ -142,7 +142,7 @@ END {
 		case "d":
 		if (data > 0) {
 			average_age = total / data
-			printf "Rata-rata usia penumpang adalah %.0f tahun", average_age
+			printf "Rata-rata usia penumpang adalah %.0f tahun\n", average_age
 		}
 		break
 
@@ -330,7 +330,7 @@ Tidak ada kendala
 
 Pertama untuk tambah penghuni dari sebuah kost, bisa memanfaatkan looping sederhana dan melakukan validasi dari tiap input user dalam nama, kamar, status, dan data-data dari input user akan dimasukkan ke dalam sebuah file `data/penghuni.csv`
 
-```c
+```sh
 create() {
 
     echo "==================================================== "
@@ -354,11 +354,26 @@ create() {
         fi
     else
         echo "maaf harus input angka"
-        sleep 1
         continue
     fi
+
     read -p "Harga sewa: " price
+    if [[ "$price" -le 0 ]]; then
+        echo "angka tidak boleh minus maupun 0"
+        continue
+    fi
+
+    # adding some sanitize on date section
     read -p "Tanggal masuk (YYYY-MM-DD): " date
+    if [[ ! "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+        echo "Salah format brok. harusnya 2026-12-31!"
+        continue
+    fi
+
+    if ! date -d "$date" >/dev/null 2>&1; then
+            echo "Tanggal tidak masuk akal,coba bikin yg bener!"
+            continue
+        fi
     read -p "status awal (aktif atau menunggak): " status
     if [[ "$status" == "aktif" || "$status" == "menunggak" ]]; then
           echo "$nama,$kamar,$price,$date,$status" >> data/penghuni.csv
@@ -403,30 +418,35 @@ re='^[0-9]+$'
 Setelah itu ada function `delete` untuk menghapus data penghuni dari kos yang sesuai diminta sama soal dan untuk menghapusnya hanya lewat nama dari penghuni itu serta history penghapusannya dipindah dengan mengcopy dari file utama ke file `history_hapus.csv`ini. Dan untuk penghapusannya hanya di file `history_hapus.csv` bukan di utamanya.
 
 ```sh
+
+# update delete section, remove 'cp' and change from delete on history_hapus.csv to delete on penghuni.csv and take note on history_hapus.csv as the problem asking.
+
 delete() {
 
     echo "==================================================== "
     echo "           『Delete Huni Kost Slebew 』              "
     echo "==================================================== "
 
-    cp data/penghuni.csv sampah/history_hapus.csv
     read -p "Masukkan nama penghuni yang ingin dihapus: " nama
 
-    if grep -q -w "$nama" sampah/history_hapus.csv 2>/dev/null; then
-        sed -i "/^$nama,/d" sampah/history_hapus.csv
+    # this one
+    if grep -q "^$nama," data/penghuni.csv 2>/dev/null; then
+        data_orang=$(grep "^$nama," data/penghuni.csv)
+        tgl_hapus=$(date +"%Y-%m-%d") #adding some date in here
+        echo "$data_orang,$tgl_hapus" >> sampah/history_hapus.csv
+        sed -i "/^$nama,/d" data/penghuni.csv
         echo "Penghuni '$nama' berhasil dihapus."
     else
         echo "Penghuni '$nama' tidak ditemukan."
     fi
 
-     while true; do
+    while true; do
           read -p "Enter untuk kembali..." dummy
-          if [ "$dummy" != "" ]; then
+            if [ "$dummy" != "" ]; then
                echo "Nope, harus enter"
-
-               else
+                else
                     break   
-          fi
+            fi
     done
 
     return
@@ -545,6 +565,8 @@ laporan() {
 Pada function `laporan` disini juga saya menggunakan awk untuk melakukan suatu perulangan dalam membaca sebua file `penghuni.csv` untuk merekap hasil pendapatannya dengan kondisi aktif tersendiri dan menunggak tersendiri. Selanjutnya dari data rekapan tersebut, akan disimpan ke sebuah file `laporan_bulanan.txt` dengan menggunakan teknik `overwrite` 
 
 ```sh
+
+#adjust some cron in here
 pengingat() {
     while true; do
         echo "==================================================== "
@@ -562,14 +584,22 @@ pengingat() {
             crontab -l 2>/dev/null || echo "Belum ada jadwal aktif."
             
         elif [ "$pilih" == "2" ]; then
-            echo "Format: menit jam tgl bulan hari_minggu"
-            read -p "Input jadwal (contoh: 00 23 * * *): " jadwal
-            read -p "Perintah/Script yg dijalankan (path lengkap): " cmd
-            
-            (crontab -l 2>/dev/null; echo "$jadwal $cmd") | crontab -
-            
-            echo "Jadwal berhasil diaktifkan!"
-            echo "[$(date)] Berhasil input: $jadwal $cmd" > log/tagihan.log
+            # adding some loop in here
+            while true; do
+                echo "Format: menit jam tgl bulan hari_minggu"
+                read -p "Input jadwal (contoh: 00 23 * * *): " jadwal
+                read -p "Perintah/Script yg dijalankan (path lengkap): " cmd
+                read -p "Perintahnya yang diinginkan: " command
+                
+                #adding command "--check-tagihan" to crontab
+                if (crontab -l 2>/dev/null; echo "$jadwal $cmd $command") | crontab - 2>/dev/null; then
+                    echo "Jadwal berhasil diaktifkan!"
+                    echo "[$(date)] Berhasil input: $jadwal $cmd $command" >> log/tagihan.log
+                    break
+                else
+                    echo "Gagal mengaktifkan jadwal! Pastikan format waktunya benar."
+                fi
+            done
 
         elif [ "$pilih" == "3" ]; then
 
@@ -583,12 +613,14 @@ pengingat() {
             echo "pilihan salah. coba lagi"
         fi
 
-        read -p "Enter untuk kembali..." dummy
+        while true; do
+            read -p "Enter untuk kembali..." dummy
                 if [ "$dummy" != "" ]; then
                     echo "Nope, harus enter"
                 else
                     break   
                 fi
+        done
     done
 }
 ```
@@ -596,7 +628,7 @@ pengingat() {
 Dan disinilah function terakhir yaitu `pengingat` dengan melakukan teknik `crob`. Dalam function ini, ada perulangan sederhana menggunakan while dan memiliki beberapa pilihan
 
 ```sh
-if [ "$pilih" == "1" ]; then
+        if [ "$pilih" == "1" ]; then
             echo "--- List Cron yang sedang berjalan ---"
             crontab -l 2>/dev/null || echo "Belum ada jadwal aktif."
 ```
@@ -605,17 +637,25 @@ Jika pilihannya 1 maka pilihan ini akan menjalankan list yang sudah dibuat oleh 
 
 ```sh
         elif [ "$pilih" == "2" ]; then
-            echo "Format: menit jam tgl bulan hari_minggu"
-            read -p "Input jadwal (contoh: 00 23 * * *): " jadwal
-            read -p "Perintah/Script yg dijalankan (path lengkap): " cmd
-            
-            (crontab -l 2>/dev/null; echo "$jadwal $cmd") | crontab -
-            
-            echo "Jadwal berhasil diaktifkan!"
-            echo "[$(date)] Berhasil input: $jadwal $cmd" >> log/tagihan.log
+            # adding some loop in here
+            while true; do
+                echo "Format: menit jam tgl bulan hari_minggu"
+                read -p "Input jadwal (contoh: 00 23 * * *): " jadwal
+                read -p "Perintah/Script yg dijalankan (path lengkap): " cmd
+                read -p "Perintahnya yang diinginkan: " command
+                
+                #adding command "--check-tagihan" to crontab
+                if (crontab -l 2>/dev/null; echo "$jadwal $cmd $command") | crontab - 2>/dev/null; then
+                    echo "Jadwal berhasil diaktifkan!"
+                    echo "[$(date)] Berhasil input: $jadwal $cmd $command" >> log/tagihan.log
+                    break
+                else
+                    echo "Gagal mengaktifkan jadwal! Pastikan format waktunya benar."
+                fi
+            done
 ```
 
-Jika pilihan 2 maka user harus menginput sesuai dengan aturan cron yaitu `*` pertama untuk menit `*` kedua untuk jam, `*` untuk hari dalam bulan, `*` bulan, dan yang terakhir untuk hari dalam minggu dan untuk inputan ini harus lengkap. jika hanya jam saja maka `00 07 * * *`. Selanjutnya adalah path menuju sebuah program `kosh_slebew.sh`. Untuk pathnya sendiri harus lengkap. Dan jika user sudah input sesuai 2 kategori data, maka inputan ini akan masuk ke dalam file `tagihan.log`.
+Jika pilihan 2 maka user harus menginput sesuai dengan aturan cron yaitu `*` pertama untuk menit `*` kedua untuk jam, `*` untuk hari dalam bulan, `*` bulan, dan yang terakhir untuk hari dalam minggu dan untuk inputan ini harus lengkap. jika hanya jam saja maka `00 07 * * *`. Selanjutnya adalah path menuju sebuah program `kosh_slebew.sh`. Untuk pathnya sendiri harus lengkap. Dan jika user sudah input sesuai 2 kategori data, maka inputan ini akan masuk ke dalam file `tagihan.log`. dan yg ketiga adalah `command` yg dimana user bisa bebas menaruh command apapun setelah path seperti: `--check-tagihan`
 
 ```sh
         elif [ "$pilih" == "3" ]; then
@@ -628,19 +668,20 @@ Jika pilihan 2 maka user harus menginput sesuai dengan aturan cron yaitu `*` per
 Jika inputan angka 3, program ini akan menjalan penghapusan cron yang sudah dibuat oleh pengguna dan akan menghapus yang sudah jalan di dalam file `tagihan.log`
 
 ```sh
-elif [ "$pilih" == "4" ]; then
+    elif [ "$pilih" == "4" ]; then
             break 
         else
             echo "pilihan salah. coba lagi"
         fi
 
-        read -p "Enter untuk kembali..." dummy
+        while true; do
+            read -p "Enter untuk kembali..." dummy
                 if [ "$dummy" != "" ]; then
                     echo "Nope, harus enter"
                 else
                     break   
                 fi
-    done
+        done
 ```
 
 Pilihan terakhir yaitu keluar dari menu cron itu sendiri
@@ -704,6 +745,35 @@ done
 
 Terdapat pilihan menu untuk sebuah user yang bisa pilih dari no 1 sampai 7 dan memiliki handler masing-masing kecuali no 7 yaitu program yang keluar dari perulangan dan mematikan program
 
+Dan satu tambahan terakhir yaitu fitur 
+
+```sh
+tagihan() {
+
+    if [ -f "data/penghuni.csv" ]; then
+        waktu=$(date +"%Y-%m-%d %H:%M:%S")
+        echo "[$waktu] Mengecek tagihan..." | tee -a log/tagihan.log
+        
+        awk -F',' '
+        NR > 1 && $5 == "menunggak" { 
+            print " -> Si " $1 " di kamar " $2 " belum bayar Rp" $3 
+        }' data/penghuni.csv | tee -a log/tagihan.log
+    fi
+}
+```
+
+fitur dimana ketika command `./kost_slebew.sh --check-tagihan` akan menjalan code 
+
+```sh
+# Here are the command if './kost_slebew.sh --check-tagihan'
+if [ "$1" == "--check-tagihan" ] ; then
+    tagihan
+    exit 0;
+fi  
+```
+
+dan dia memanggil fungsi `tagihan` untuk mengecheck tagihan yang masih menunggak dari beberapa penghuninya dan menaruhnya ke dalam `log/tagihan.log`
+
 #### Output
 
 1. Awalnya tidak ada file dan folder
@@ -749,6 +819,14 @@ Terdapat pilihan menu untuk sebuah user yang bisa pilih dari no 1 sampai 7 dan m
 11. Finalisasi
 
 ![alt text](assets/soal_3/final.png)
+
+12. Input ./kost_slebew --check-tagihan
+
+![alt text](assets/soal_3/input%20command.png)
+
+13. The result of point no 12
+
+![alt text](assets/soal_3/result.png)
 
 #### Kendala
 
