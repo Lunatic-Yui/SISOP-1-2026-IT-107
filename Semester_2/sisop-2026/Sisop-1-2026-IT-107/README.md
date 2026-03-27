@@ -830,4 +830,4 @@ dan dia memanggil fungsi `tagihan` untuk mengecheck tagihan yang masih menunggak
 
 #### Kendala
 
-Terdapat kendala cron itu sendiri yang dimana harus mengikuti aturan dan tidak ada penambahan setelah path dari sebuah program itu berjalan. Penggunaan sed itu sendiri yang mengakibatkan beberapa pencarian dalam internet mengenai `sed` untuk mengubah status
+Terdapat kendala cron itu sendiri yang dimana harus mengikuti aturan dan tidak ada penambahan setelah path dari sebuah program itu berjalan. Penggunaan sed itu sendiri yang mengakibatkan beberapa pencarian dalam internet mengenai `sed` untuk mengubah status. Dan ada beberapa command yang kurang dalam cron seperti --check-tagihan. itu aja
